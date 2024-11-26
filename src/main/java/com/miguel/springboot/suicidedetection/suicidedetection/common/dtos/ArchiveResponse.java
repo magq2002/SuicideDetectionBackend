@@ -8,7 +8,10 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ArchiveResponse {
-    private String status;
+    private String message;
+
+    public ArchiveResponse(StringBuilder respuesta) {
+    }
 }
 
 

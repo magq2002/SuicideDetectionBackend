@@ -1,38 +1,31 @@
 package com.miguel.springboot.suicidedetection.suicidedetection.config;
 
-import gate.Factory;
-import gate.Gate;
-import gate.LanguageAnalyser;
-import gate.ProcessingResource;
+import gate.*;
 import gate.creole.Plugin;
 import gate.creole.SerialAnalyserController;
 import gate.util.GateException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Objects;
 
 @Configuration
 public class GateConfig {
 
     @Bean
     public SerialAnalyserController serialAnalyserController() throws GateException, MalformedURLException {
-        // Inicializar GATE
         Gate.init();
-
-        // Cargar ANNIE
         Plugin anniePlugin = new Plugin.Maven(
-                "uk.ac.gate.plugins", "annie", gate.Main.version);
+                "uk.ac.gate.plugins", "annie", "9.1");
         Gate.getCreoleRegister().registerPlugin(anniePlugin);
-
-        Plugin learningPlugin = new Plugin.Maven(
-                "uk.ac.gate.plugins", "learningframework", "4.2");
-        Gate.getCreoleRegister().registerPlugin(learningPlugin);
-
-        // create a serial analyser controller to run ANNIE with
-        SerialAnalyserController annieController =
+        Plugin pythonPlugin = new Plugin.Maven(
+                "uk.ac.gate.plugins", "python", "3.0.7");
+        Gate.getCreoleRegister().registerPlugin(pythonPlugin);
+        SerialAnalyserController modelController =
                 (SerialAnalyserController) Factory.createResource(
                         "gate.creole.SerialAnalyserController",
                         Factory.newFeatureMap(),
@@ -45,23 +38,21 @@ public class GateConfig {
                 "gate.creole.ANNIETransducer",
                 "gate.creole.orthomatcher.OrthoMatcher"
                 )) {
-            annieController.add((gate.LanguageAnalyser) Factory.createResource(pr));
+            modelController.add((gate.LanguageAnalyser) Factory.createResource(pr));
         }
+        URL scriptUrl = new File("src/main/resources/apply_prediction.py").toURI().toURL();
+        String modelPathUrl = "C:\\Users\\magq2\\Documents\\entrenoBert\\modelo_final.pt";
 
-        ProcessingResource evaluatePR = (ProcessingResource) Factory.createResource(
-                "gate.plugin.learningframework.LF_ApplyClassification");
-
-        //evaluatePR.setParameterValue("dataDirectory", "file:/C:/Users/magq2/Documents/proyectoGradoTwitter/datos/trainedModel");
-        //evaluatePR.setParameterValue("instanceType", "Key");
-        //evaluatePR.setParameterValue("outputASName", "Learning");
-        //evaluatePR.setParameterValue("modelURL", new URL("file:/C:/Users/magq2/Documents/proyectoGradoTwitter/datos/trainedModel/lf.model"));
-
-        //annieController.add(evaluatePR);
-        return annieController;
+        FeatureMap params = Factory.newFeatureMap();
+        params.put("pythonProgram", scriptUrl.toString());
+        params.put("pythonBinary", "C:\\Users\\magq2\\.conda\\envs\\GATEPython\\python.exe");
+        FeatureMap programParams = Factory.newFeatureMap();
+        programParams.put("model_path", modelPathUrl);
+        programParams.put("gpu", "true");
+        programParams.put("workingSet", "Suicide");
+        params.put("programParams", programParams);
+        ProcessingResource pythonPR = (ProcessingResource) Factory.createResource("gate.plugin.python.PythonPr", params);
+        modelController.add(pythonPR);
+        return modelController;
     }
-
-
-    // Cargar el modelo de clasificación de textos
-
-
 }

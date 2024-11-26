@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 public interface ArchiveApi {
     @PostMapping(value = "/archive", consumes = "multipart/form-data")
     ResponseEntity<ArchiveResponse> processArchive(
-            @RequestPart("archiveRequest") ArchiveRequest archiveRequest,
+            //@RequestPart("archiveRequest") ArchiveRequest archiveRequest,
             @RequestPart("files") MultipartFile[] files
     );
 }

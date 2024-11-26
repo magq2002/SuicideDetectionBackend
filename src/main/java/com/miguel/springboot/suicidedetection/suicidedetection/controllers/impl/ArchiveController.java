@@ -16,7 +16,7 @@ public class ArchiveController implements ArchiveApi {
         this.archiveService = archiveService;
     }
     @Override
-    public ResponseEntity<ArchiveResponse> processArchive(ArchiveRequest archiveRequest, MultipartFile[] files) {
+    public ResponseEntity<ArchiveResponse> processArchive(MultipartFile[] files) {
         return ResponseEntity.ok(archiveService.processArchive(files));
     }
 }
