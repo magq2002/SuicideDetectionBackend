@@ -17,8 +17,7 @@ public class TextController implements TextApi {
     }
 
     @Override
-    public ResponseEntity<TextResponse> processText(TextRequest textRequest) {
-        String text = textRequest.getText();
-        return ResponseEntity.ok(textService.processText(text));
+    public ResponseEntity<TextResponse> processText(TextRequest textRequest ) {
+        return ResponseEntity.ok(textService.processText(textRequest));
     }
 }

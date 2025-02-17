@@ -1,5 +1,5 @@
 package com.miguel.springboot.suicidedetection.suicidedetection.common.entities;
-import org.springframework.data.geo.Point;
+import org.locationtech.jts.geom.Point;
 
 import lombok.*;
 import jakarta.persistence.*;
@@ -19,7 +19,7 @@ public class Register {
     private Long id;
     private String name;
     @Column(columnDefinition = "POINT")
-    private Point ubicacion;
+    private Point location;
     private String ipAddress;
     @ManyToOne
     @JoinColumn(name = "type_register_id", nullable = false)

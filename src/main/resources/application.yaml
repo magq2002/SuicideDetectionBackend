@@ -8,3 +8,14 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+custom:
+  gate:
+    script-url: src/main/resources/apply_prediction.py
+    model-path-url: C:/Users/magq2/Documents/entrenoBert/modelo_final.pt
+    python-binary: C:/Users/magq2/.conda/envs/GATEPython/python.exe
+  cors:
+    allowed-origins: "http://localhost:4200"

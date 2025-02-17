@@ -4,6 +4,7 @@ import gate.*;
 import gate.creole.Plugin;
 import gate.creole.SerialAnalyserController;
 import gate.util.GateException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,6 +16,15 @@ import java.util.Objects;
 
 @Configuration
 public class GateConfig {
+
+    @Value("${custom.gate.script-url}")
+    private String scriptUrl;
+
+    @Value("${custom.gate.model-path-url}")
+    private String modelPathUrl;
+
+    @Value("${custom.gate.python-binary}")
+    private String pythonBinary;
 
     @Bean
     public SerialAnalyserController serialAnalyserController() throws GateException, MalformedURLException {
@@ -40,17 +50,19 @@ public class GateConfig {
                 )) {
             modelController.add((gate.LanguageAnalyser) Factory.createResource(pr));
         }
-        URL scriptUrl = new File("src/main/resources/apply_prediction.py").toURI().toURL();
-        String modelPathUrl = "C:\\Users\\magq2\\Documents\\entrenoBert\\modelo_final.pt";
+        URL scriptUrlPath = new File(scriptUrl).toURI().toURL();
 
         FeatureMap params = Factory.newFeatureMap();
-        params.put("pythonProgram", scriptUrl.toString());
-        params.put("pythonBinary", "C:\\Users\\magq2\\.conda\\envs\\GATEPython\\python.exe");
+        params.put("pythonProgram", scriptUrlPath.toString());
+        params.put("pythonBinary", pythonBinary);
+
         FeatureMap programParams = Factory.newFeatureMap();
         programParams.put("model_path", modelPathUrl);
         programParams.put("gpu", "true");
         programParams.put("workingSet", "Suicide");
+
         params.put("programParams", programParams);
+
         ProcessingResource pythonPR = (ProcessingResource) Factory.createResource("gate.plugin.python.PythonPr", params);
         modelController.add(pythonPR);
         return modelController;

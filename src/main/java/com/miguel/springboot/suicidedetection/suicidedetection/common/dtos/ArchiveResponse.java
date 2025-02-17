@@ -2,16 +2,15 @@ package com.miguel.springboot.suicidedetection.suicidedetection.common.dtos;
 
 import lombok.*;
 
+import java.util.List;
+
 @Builder
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class ArchiveResponse {
-    private String message;
-
-    public ArchiveResponse(StringBuilder respuesta) {
-    }
+    private List<String> messages;
 }
 
 
