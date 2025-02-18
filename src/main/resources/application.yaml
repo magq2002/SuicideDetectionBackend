@@ -19,3 +19,5 @@ custom:
     python-binary: C:/Users/magq2/.conda/envs/GATEPython/python.exe
   cors:
     allowed-origins: "http://localhost:4200"
+jwt:
+  secret: hshsdgdgajdhjassaghhhhhhhhgghhfgffhhhystdkwsgbhsjkdhsfytshafsysgagsujjklklnbbccfgvvhbvbvcvbgnhbvcvfgghg
