@@ -18,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ArchiveServiceImpl implements ArchiveService {
@@ -43,29 +45,30 @@ public class ArchiveServiceImpl implements ArchiveService {
 
     @Override
     public ArchiveResponse processArchive(MultipartFile[] files, ArchiveRequest archiveRequest) {
+        List<Map<String, Object>> documents = new ArrayList<>();
         List<String> respuestas = new ArrayList<>();
-        int totalDocuments = files.length;
-        int suicideDocuments = 0;
-        int nonSuicideDocuments = 0;
 
         for (MultipartFile file : files) {
             try {
                 AnalysisResult result = documentProcessorServiceImpl.analyzeDocument(file);
                 respuestas.add(result.getText());
 
-                if (result.isSuicide()) {
-                    suicideDocuments++;
-                } else {
-                    nonSuicideDocuments++;
-                }
+                // Agregar el documento a la lista con su nombre y clasificación
+                documents.add(Map.of(
+                        "name", file.getOriginalFilename(),
+                        "isSuicidal", result.isSuicide()
+                ));
+
             } catch (Exception e) {
                 e.printStackTrace();
                 respuestas.add("Error procesando archivo: " + file.getOriginalFilename());
             }
         }
 
-        byte[] pdfBytes = reportServiceImpl.generateReport(totalDocuments, suicideDocuments, nonSuicideDocuments);
+        // Generar el PDF con la lista de documentos procesados
+        byte[] pdfBytes = reportServiceImpl.generateReport(documents);
 
+        // Guardar el registro en la base de datos
         saveRegister(archiveRequest);
 
         if (respuestas.isEmpty()) {
