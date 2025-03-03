@@ -25,6 +25,7 @@ public class ArchiveController implements ArchiveApi {
             ArchiveRequest archiveRequest = objectMapper.readValue(archiveRequestJson, ArchiveRequest.class);
 
             ArchiveResponse response = archiveService.processArchive(files, archiveRequest);
+            System.out.println(response);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {

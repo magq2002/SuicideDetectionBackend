@@ -2,34 +2,27 @@ package com.miguel.springboot.suicidedetection.suicidedetection.services.impl;
 
 import com.miguel.springboot.suicidedetection.suicidedetection.common.dtos.ArchiveRequest;
 import com.miguel.springboot.suicidedetection.suicidedetection.common.dtos.ArchiveResponse;
+import com.miguel.springboot.suicidedetection.suicidedetection.common.dtos.AnalysisResult;
 import com.miguel.springboot.suicidedetection.suicidedetection.common.entities.Register;
 import com.miguel.springboot.suicidedetection.suicidedetection.repositories.RegisterRepository;
 import com.miguel.springboot.suicidedetection.suicidedetection.repositories.TypeRegisterRepository;
 import com.miguel.springboot.suicidedetection.suicidedetection.services.ArchiveService;
-import com.miguel.springboot.suicidedetection.suicidedetection.services.ModelService;
-import gate.util.GateException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.ArrayList;
-
-
-import java.io.IOException;
+import java.util.List;
 
 @Service
 public class ArchiveServiceImpl implements ArchiveService {
-    private final ModelService modelService;
+    private final DocumentProcessorServiceImpl documentProcessorServiceImpl;
+    private final ReportServiceImpl reportServiceImpl;
     private final RegisterRepository registerRepository;
     private final TypeRegisterRepository typeRegisterRepository;
     private static final GeometryFactory geometryFactory = new GeometryFactory();
@@ -37,39 +30,52 @@ public class ArchiveServiceImpl implements ArchiveService {
     @Autowired
     private HttpServletRequest request;
 
-    public ArchiveServiceImpl(ModelService modelService, RegisterRepository registerRepository, TypeRegisterRepository typeRegisterRepository) {
-        this.modelService = modelService;
+    @Autowired
+    public ArchiveServiceImpl(DocumentProcessorServiceImpl documentProcessorServiceImpl,
+                              ReportServiceImpl reportServiceImpl,
+                              RegisterRepository registerRepository,
+                              TypeRegisterRepository typeRegisterRepository) {
+        this.documentProcessorServiceImpl = documentProcessorServiceImpl;
+        this.reportServiceImpl = reportServiceImpl;
         this.registerRepository = registerRepository;
         this.typeRegisterRepository = typeRegisterRepository;
     }
 
     @Override
     public ArchiveResponse processArchive(MultipartFile[] files, ArchiveRequest archiveRequest) {
-
-        StringBuilder respuesta = null;
         List<String> respuestas = new ArrayList<>();
+        int totalDocuments = files.length;
+        int suicideDocuments = 0;
+        int nonSuicideDocuments = 0;
 
         for (MultipartFile file : files) {
             try {
-                String extractedText;
-                if (file.getOriginalFilename().endsWith(".pdf")) {
-                    extractedText = extractTextFromPdf(file);
-                } else {
-                    extractedText = new String(file.getBytes());
-                }
-                try {
-                    respuesta = modelService.processWithModel(extractedText.toString());
-                    respuestas.add(respuesta.toString());
+                AnalysisResult result = documentProcessorServiceImpl.analyzeDocument(file);
+                respuestas.add(result.getText());
 
-                } catch (GateException e) {
-                    throw new RuntimeException(e);
+                if (result.isSuicide()) {
+                    suicideDocuments++;
+                } else {
+                    nonSuicideDocuments++;
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 respuestas.add("Error procesando archivo: " + file.getOriginalFilename());
             }
         }
 
+        byte[] pdfBytes = reportServiceImpl.generateReport(totalDocuments, suicideDocuments, nonSuicideDocuments);
+
+        saveRegister(archiveRequest);
+
+        if (respuestas.isEmpty()) {
+            respuestas.add("No se pudieron procesar los archivos.");
+        }
+
+        return new ArchiveResponse(respuestas, pdfBytes);
+    }
+
+    private void saveRegister(ArchiveRequest archiveRequest) {
         Coordinate coordinate = new Coordinate(
                 archiveRequest.getLocation().getX(),
                 archiveRequest.getLocation().getY()
@@ -78,25 +84,14 @@ public class ArchiveServiceImpl implements ArchiveService {
 
         Register register = new Register();
         register.setLocation(location);
-        String clientIp = getClientIp();
-        register.setIpAddress(clientIp);
+        register.setIpAddress(getClientIp());
         register.setTypeRegister(typeRegisterRepository.findById(1L)
                 .orElseThrow(() -> new RuntimeException("TypeRegister predeterminado no encontrado")));
 
-
         this.registerRepository.save(register);
-
-        return new ArchiveResponse(respuestas);
     }
 
-    public String extractTextFromPdf(MultipartFile file) throws IOException {
-        try (PDDocument document = PDDocument.load(file.getInputStream())) {
-            PDFTextStripper pdfStripper = new PDFTextStripper();
-            return pdfStripper.getText(document);
-        }
-    }
-
-    public String getClientIp() {
+    private String getClientIp() {
         String[] headerNames = {
                 "X-Forwarded-For",
                 "Proxy-Client-IP",
@@ -120,5 +115,4 @@ public class ArchiveServiceImpl implements ArchiveService {
 
         return request.getRemoteAddr();
     }
-
 }
