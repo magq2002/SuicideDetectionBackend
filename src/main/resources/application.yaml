@@ -18,6 +18,6 @@ custom:
     model-path-url: C:/Users/magq2/Documents/entrenoBert/modelo_final.pt
     python-binary: C:/Users/magq2/.conda/envs/GATEPython/python.exe
   cors:
-    allowed-origins: "http://localhost:4200"
+    allowed-origins: "http://localhost:4200,https://9bzvdhcg-4200.use2.devtunnels.ms"
 jwt:
   secret: hshsdgdgajdhjassaghhhhhhhhgghhfgffhhhystdkwsgbhsjkdhsfytshafsysgagsujjklklnbbccfgvvhbvbvcvbgnhbvcvfgghg
